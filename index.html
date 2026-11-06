@@ -23,7 +23,7 @@ function updateAttendanceChoices(){
 }
 $('#attendanceClass').addEventListener('change',()=>{$('#attendanceSearch').value='';$('#attendanceChild').value='';updateAttendanceChoices()});
 $('#attendanceSearch').addEventListener('input',updateAttendanceChoices);
-function render(){const c=state.classes,t=state.teams,ch=state.children,a=state.attendance,d=state.donations;$$('.classSelect').forEach(el=>{let v=el.value;el.innerHTML=opts(c);el.value=v});$$('.childSelect').forEach(el=>{let v=el.value;el.innerHTML=opts(ch);el.value=v});updateAttendanceChoices();updateChildTeams();$('#stats').innerHTML=[['الصفوف',c.length],['الفرق',t.length],['الأخوة',ch.length],['سجلات الحضور',a.length],['التبرعات',d.length]].map(([k,v])=>'<span class="chip">'+k+': <b>'+v+'</b></span>').join('');$('#classList').innerHTML=c.map(x=>'<p class="chip"><b>'+esc(x.name)+'</b> — '+esc(t.filter(y=>y.class_id===x.id).map(y=>y.name).join('، ')||'لا توجد فرق')+'</p>').join('')||'<p class="empty">لا توجد صفوف</p>';$('#childrenList').innerHTML=ch.length?'<table><thead><tr><th>الاسم</th><th>الصف</th><th>الفرقة</th><th>إجراء</th></tr></thead><tbody>'+ch.map(x=>'<tr><td>'+esc(x.name||x.full_name)+'</td><td>'+esc(name('classes',x.class_id))+'</td><td>'+esc(name('teams',x.team_id))+'</td><td><button type="button" class="delete-child" data-child-id="'+esc(x.id)+'" style="background:#c83d63;padding:8px 12px">حذف</button></td></tr>').join('')+'</tbody></table>':'<div class="empty">لا توجد بيانات بعد</div>';$('#attendanceList').innerHTML=a.length?'<table><thead><tr><th>التاريخ</th><th>الأخ</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>'+[...a].sort((x,y)=>attDate(y).localeCompare(attDate(x))).slice(0,100).map(x=>'<tr><td>'+esc(attDate(x))+'</td><td>'+esc(name('children',x.child_id))+'</td><td>'+esc(attStatus(x.status))+'</td><td><button type="button" class="edit-attendance" data-attendance-id="'+esc(x.id)+'">تعديل</button> <button type="button" class="delete-attendance danger" data-attendance-id="'+esc(x.id)+'">حذف</button></td></tr>').join('')+'</tbody></table>':'<div class="empty">لا توجد بيانات بعد</div>';$('#donationsList').innerHTML=table(['الشهر','الطفل','المبلغ'],[...d].sort((x,y)=>donDate(y).localeCompare(donDate(x))).slice(0,100).map(x=>[donDate(x),name('children',x.child_id),money(x.amount)]));scopeOptions();reportOptions()}
+function render(){const c=state.classes,t=state.teams,ch=state.children,a=state.attendance,d=state.donations;$$('.classSelect').forEach(el=>{let v=el.value;el.innerHTML=opts(c);el.value=v});$$('.childSelect').forEach(el=>{let v=el.value;el.innerHTML=opts(ch);el.value=v});updateAttendanceChoices();updateChildTeams();$('#stats').innerHTML=[['الصفوف',c.length],['الفرق',t.length],['الأخوة',ch.length],['سجلات الحضور',a.length],['التبرعات',d.length]].map(([k,v])=>'<span class="chip">'+k+': <b>'+v+'</b></span>').join('');$('#classList').innerHTML=c.map(x=>'<div class="chip" style="margin:10px 0"><div class="row"><b>'+esc(x.name)+'</b><button type="button" class="delete-class danger" data-class-id="'+esc(x.id)+'">حذف الصف</button></div><div style="margin-top:9px">'+(t.filter(y=>String(y.class_id)===String(x.id)).map(y=>'<div class="row" style="padding:6px 0"><span>الفرقة: '+esc(y.name)+'</span><button type="button" class="delete-team danger" data-team-id="'+esc(y.id)+'">حذف الفرقة</button></div>').join('')||'لا توجد فرق')+'</div></div>').join('')||'<p class="empty">لا توجد صفوف</p>';$('#childrenList').innerHTML=ch.length?'<table><thead><tr><th>الاسم</th><th>الصف</th><th>الفرقة</th><th>إجراء</th></tr></thead><tbody>'+ch.map(x=>'<tr><td>'+esc(x.name||x.full_name)+'</td><td>'+esc(name('classes',x.class_id))+'</td><td>'+esc(name('teams',x.team_id))+'</td><td><button type="button" class="delete-child" data-child-id="'+esc(x.id)+'" style="background:#c83d63;padding:8px 12px">حذف</button></td></tr>').join('')+'</tbody></table>':'<div class="empty">لا توجد بيانات بعد</div>';$('#attendanceList').innerHTML=a.length?'<table><thead><tr><th>التاريخ</th><th>الأخ</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>'+[...a].sort((x,y)=>attDate(y).localeCompare(attDate(x))).slice(0,100).map(x=>'<tr><td>'+esc(attDate(x))+'</td><td>'+esc(name('children',x.child_id))+'</td><td>'+esc(attStatus(x.status))+'</td><td><button type="button" class="edit-attendance" data-attendance-id="'+esc(x.id)+'">تعديل</button> <button type="button" class="delete-attendance danger" data-attendance-id="'+esc(x.id)+'">حذف</button></td></tr>').join('')+'</tbody></table>':'<div class="empty">لا توجد بيانات بعد</div>';$('#donationsList').innerHTML=table(['الشهر','الطفل','المبلغ'],[...d].sort((x,y)=>donDate(y).localeCompare(donDate(x))).slice(0,100).map(x=>[donDate(x),name('children',x.child_id),money(x.amount)]));scopeOptions();reportOptions()}
 function updateChildTeams(){let s=$('#childTeam'),v=s.value,cl=$('#childClass').value;s.innerHTML=opts(state.teams.filter(x=>String(x.class_id)===String(cl)),'بدون فرقة');s.value=v}
 function scoped(kind,id){let ch=state.children.filter(x=>kind==='all'||(kind==='child'?String(x.id)===String(id):kind==='class'?String(x.class_id)===String(id):String(x.team_id)===String(id)));let ids=new Set(ch.map(x=>String(x.id)));return{children:ch,attendance:state.attendance.filter(x=>ids.has(String(x.child_id))),donations:state.donations.filter(x=>ids.has(String(x.child_id)))}}
 function scopeOptions(){let el=$('#scopeId'),v=el.value,k=$('#scope').value;el.innerHTML=opts(state[k==='child'?'children':k==='team'?'teams':'classes']);el.value=v}
@@ -32,6 +32,39 @@ async function insert(tableName,payload,upsert=false){let q=upsert?db.from(table
 function formData(f){return Object.fromEntries(new FormData(f).entries())}
 function submit(id,fn){$(id).addEventListener('submit',async e=>{e.preventDefault();const btn=e.target.querySelector('button');btn.disabled=true;try{await fn(formData(e.target));if(id!=='#attendanceForm')e.target.reset()}catch(err){msg('تعذّر الحفظ: '+err.message,true)}finally{btn.disabled=false}})}
 submit('#classForm',x=>insert('classes',{name:x.name.trim()}));submit('#teamForm',x=>insert('teams',{name:x.name.trim(),class_id:x.class_id}));submit('#childForm',x=>insert('children',{name:x.name.trim(),class_id:x.class_id,team_id:x.team_id||null}));submit('#attendanceForm',async x=>{let payload={child_id:x.child_id,date:x.date,status:x.status};let {error}=await db.from('attendance').upsert(payload,{onConflict:'child_id,date'});if(error)throw error;msg('تم حفظ الحضور');await load()});submit('#donationForm',x=>insert('donations',{child_id:x.child_id,donation_month:x.donation_month+'-01',amount:Number(x.amount)}));
+async function deleteChecked(tableName,column,values){
+ if(!values.length)return;
+ for(let i=0;i<values.length;i+=100){
+  const chunk=values.slice(i,i+100);
+  const {data,error}=await db.from(tableName).delete().in(column,chunk).select('id');
+  if(error)throw Error(tableName+': '+error.message);
+  if((data||[]).length!==chunk.length)throw Error('لم يتم حذف جميع السجلات من '+tableName+'. تحقق من صلاحيات قاعدة البيانات.');
+ }
+}
+$('#classList').addEventListener('click',async e=>{
+ const teamBtn=e.target.closest('.delete-team'),classBtn=e.target.closest('.delete-class');
+ if(!teamBtn&&!classBtn)return;
+ const isTeam=!!teamBtn,btn=teamBtn||classBtn,id=isTeam?btn.dataset.teamId:btn.dataset.classId;
+ const item=state[isTeam?'teams':'classes'].find(x=>String(x.id)===String(id));if(!item)return;
+ const children=state.children.filter(x=>isTeam?String(x.team_id)===String(id):String(x.class_id)===String(id));
+ const childIds=children.map(x=>x.id),childSet=new Set(childIds.map(String));
+ const teamIds=isTeam?[id]:state.teams.filter(x=>String(x.class_id)===String(id)).map(x=>x.id);
+ const attendanceIds=state.attendance.filter(x=>childSet.has(String(x.child_id))).map(x=>x.id);
+ const donationIds=state.donations.filter(x=>childSet.has(String(x.child_id))).map(x=>x.id);
+ const warning='هل تريد حذف '+(isTeam?'الفرقة':'الصف')+' «'+item.name+'» نهائياً؟\n\nسيتم حذف '+children.length+' من الأخوة، و'+attendanceIds.length+' سجل حضور، و'+donationIds.length+' سجل تبرع'+(isTeam?'':'، و'+teamIds.length+' من الفرق')+'.\n\nهذا الحذف نهائي ولا يمكن التراجع عنه.';
+ if(!window.confirm(warning))return;
+ btn.disabled=true;
+ try{
+  // Delete dependent records before deleting their children, teams and class.
+  await deleteChecked('attendance','id',attendanceIds);
+  await deleteChecked('donations','id',donationIds);
+  await deleteChecked('children','id',childIds);
+  await deleteChecked('teams','id',teamIds);
+  if(!isTeam)await deleteChecked('classes','id',[id]);
+  await load();msg('تم حذف '+(isTeam?'الفرقة':'الصف')+' وكل الأسماء والسجلات المرتبطة بنجاح.');
+ }catch(err){await load();msg('تعذّر إكمال الحذف: '+err.message+'\nقد يكون تم حذف جزء من السجلات؛ حدّث البيانات وتحقق قبل إعادة المحاولة.',true)}
+ finally{btn.disabled=false}
+});
 $('#childrenList').addEventListener('click',async e=>{
  const btn=e.target.closest('.delete-child');if(!btn)return;
  const id=btn.dataset.childId;
