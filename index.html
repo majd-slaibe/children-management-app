@@ -10,7 +10,32 @@
 <section data-page="reports" class="hidden"><h2>تحميل التقارير بصيغة PDF</h2><form id="reportForm"><div><label>نوع التقرير</label><select id="reportType"><option value="attendance">الحضور والغياب</option><option value="donations">التبرعات</option><option value="both">الحضور والتبرعات</option></select></div><div><label>الفترة</label><select id="period"><option value="all">كامل السجل</option><option value="day">يومي</option><option value="month">شهري</option><option value="year">سنوي</option></select></div><div><label>التاريخ المرجعي</label><input id="reportDate" type="date"></div><div><label>النطاق</label><select id="reportScope"><option value="all">الجميع</option><option value="class">صف</option><option value="team">فرقة</option><option value="child">طفل</option></select></div><div><label>الاسم</label><select id="reportScopeId"></select></div><button>تحميل PDF</button></form><p class="hint">التقرير عربي ويدعم الطباعة أو الحفظ كـ PDF من نافذة الطباعة. قد يحتاج المتصفح إلى السماح بالنوافذ المنبثقة.</p></section></div></main><footer>أسرة التعليم الديني في كفربو — قاعدة بيانات مشتركة</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 (()=>{'use strict';const URL='https://viicbnsnklliadoucgya.supabase.co',KEY='sb_publishable_Lqd_TRFAzz6GsknTsL2G5A_mln7GQYA';const db=window.supabase.createClient(URL,KEY);let state={classes:[],teams:[],children:[],attendance:[],donations:[]},channel=null,loading=false;const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const today=()=>new Date().toLocaleDateString('en-CA');const name=(kind,id)=>state[kind].find(x=>String(x.id)===String(id))?.name||'—';const msg=(text,error=false)=>{const n=$('#notice');n.textContent=text;n.classList.remove('hidden');n.style.background=error?'#ffe6e8':'#dff8ed';window.scrollTo({top:0,behavior:'smooth'});setTimeout(()=>n.classList.add('hidden'),6500)};const table=(headers,rows)=>rows.length?'<table><thead><tr>'+headers.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>':'<div class="empty">لا توجد بيانات بعد</div>';const opts=(items,placeholder='اختر')=>'<option value="">'+placeholder+'</option>'+items.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');const attStatus=x=>x==='present'||x==='حاضر'?'حاضر':x==='absent'||x==='غائب'?'غائب':x==='excused'||x==='غائب بعذر'?'غائب بعذر':x||'—';const attDate=a=>a.date||a.attendance_date||a.created_at?.slice(0,10)||'';const donDate=d=>d.donation_month||d.month||d.created_at?.slice(0,10)||'';const money=v=>Number(v||0).toLocaleString('ar');
-async function load(){if(loading)return;loading=true;try{const keys=['classes','teams','children','attendance','donations'];const res=await Promise.all(keys.map(k=>db.from(k).select('*')));res.forEach((r,i)=>{if(r.error)throw Error(keys[i]+': '+r.error.message);state[keys[i]]=r.data||[]});render()}catch(e){msg('تعذّر تحميل البيانات: '+e.message,true)}finally{loading=false}}
+// Supabase/PostgREST returns at most the project's configured max rows per request.
+// Fetch every page, using a stable primary-key order so reports include all records.
+async function fetchAll(tableName){
+ const pageSize=500,all=[];
+ for(let from=0;;from+=pageSize){
+  const {data,error}=await db.from(tableName).select('*').order('id',{ascending:true}).range(from,from+pageSize-1);
+  if(error)throw Error(tableName+': '+error.message);
+  const rows=data||[];all.push(...rows);
+  if(rows.length<pageSize)return all;
+ }
+}
+let reloadRequested=false;
+async function load(){
+ if(loading){reloadRequested=true;return}
+ loading=true;
+ try{
+  do{
+   reloadRequested=false;
+   const keys=['classes','teams','children','attendance','donations'];
+   const results=await Promise.all(keys.map(fetchAll));
+   const next={};keys.forEach((k,i)=>next[k]=results[i]);
+   state=next;render();
+  }while(reloadRequested);
+ }catch(e){msg('تعذّر تحميل البيانات: '+e.message,true)}
+ finally{loading=false}
+}
 function updateAttendanceChoices(){
  const cls=$('#attendanceClass'),child=$('#attendanceChild'),search=$('#attendanceSearch');
  const previousClass=cls.value,previousChild=child.value;
@@ -48,7 +73,7 @@ function reportOptions(){let el=$('#reportScopeId'),v=el.value,k=$('#reportScope
 async function insert(tableName,payload,upsert=false){let q=upsert?db.from(tableName).upsert(payload,{onConflict:'child_id,date'}):db.from(tableName).insert(payload);let {error}=await q;if(error)throw error;msg('تم الحفظ بنجاح');await load()}
 function formData(f){return Object.fromEntries(new FormData(f).entries())}
 function submit(id,fn){$(id).addEventListener('submit',async e=>{e.preventDefault();const btn=e.target.querySelector('button');btn.disabled=true;try{await fn(formData(e.target));if(id!=='#attendanceForm')e.target.reset()}catch(err){msg('تعذّر الحفظ: '+err.message,true)}finally{btn.disabled=false}})}
-submit('#classForm',x=>insert('classes',{name:x.name.trim()}));submit('#teamForm',x=>insert('teams',{name:x.name.trim(),class_id:x.class_id}));submit('#childForm',x=>insert('children',{name:x.name.trim(),class_id:x.class_id,team_id:x.team_id||null}));submit('#attendanceForm',async x=>{let payload={child_id:x.child_id,date:x.date,status:x.status};let {error}=await db.from('attendance').upsert(payload,{onConflict:'child_id,date'});if(error)throw error;msg('تم حفظ الحضور');await load()});submit('#donationForm',x=>insert('donations',{child_id:x.child_id,donation_month:x.donation_month,amount:Number(x.amount)}));
+submit('#classForm',x=>insert('classes',{name:x.name.trim()}));submit('#teamForm',x=>insert('teams',{name:x.name.trim(),class_id:x.class_id}));submit('#childForm',x=>insert('children',{name:x.name.trim(),class_id:x.class_id,team_id:x.team_id||null}));submit('#attendanceForm',async x=>{let payload={child_id:x.child_id,date:x.date,status:x.status};let {data,error}=await db.from('attendance').upsert(payload,{onConflict:'child_id,date'}).select('id,child_id,date,status');if(error)throw error;if(!data||!data.some(r=>String(r.child_id)===String(x.child_id)&&r.date===x.date&&r.status===x.status))throw Error('لم يتم التأكد من حفظ الحضور في قاعدة البيانات');await load();msg('تم حفظ الحضور بنجاح')});submit('#donationForm',x=>insert('donations',{child_id:x.child_id,donation_month:x.donation_month,amount:Number(x.amount)}));
 async function deleteChecked(tableName,column,values){
  if(!values.length)return;
  for(let i=0;i<values.length;i+=100){
